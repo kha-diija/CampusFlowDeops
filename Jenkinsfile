@@ -11,12 +11,38 @@ pipeline {
     }
 
     stages {
-        stage('Build Backend') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
             steps {
                 dir('backend') {
-                    sh 'mvn clean install -Dmaven.test.skip=true'
+                    sh 'mvn -B clean package -DskipTests'
                 }
             }
+        }
+
+        stage('Test') {
+            steps {
+                dir('backend') {
+                    sh 'mvn -B test'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: 'backend/target/surefire-reports/*.xml'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
         }
     }
 }
